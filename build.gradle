@@ -19,9 +19,13 @@ repositories {
 	mavenCentral()
 }
 
+def tfVersion = '1.0.0-rc.2'
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation group: 'org.tensorflow', name: 'tensorflow-core-platform', version: tfVersion
+    implementation group: 'org.tensorflow', name: 'tensorflow-framework', version: tfVersion
+    implementation group: 'com.google.guava', name: 'guava', version: '33.4.0-jre'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

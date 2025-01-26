@@ -32,6 +32,9 @@ gradlew*
 
 # Project Settings
 .vscode/*
+.DS_Store
 upload-dir
-bin/*
+result-dir
 gradle/*
+detection-models
+*labels*
