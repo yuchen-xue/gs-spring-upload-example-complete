@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.uploadingfiles.storage.StorageFileNotFoundException;
 import com.example.uploadingfiles.storage.StorageService;
+import com.example.uploadingfiles.db.SingleResult;
 
 @Controller
 public class FileUploadController {
@@ -66,6 +67,11 @@ public class FileUploadController {
 
 		return "redirect:/";
 	}
+
+    @GetMapping(value = "/db/all")
+    public @ResponseBody Iterable<SingleResult> getAllResults() {
+        return storageService.getAllResults();
+    }
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
 	public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {

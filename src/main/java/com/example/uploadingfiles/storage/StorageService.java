@@ -6,6 +6,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
+import com.example.uploadingfiles.db.SingleResult;
+
 public interface StorageService {
 
 	void init();
@@ -15,6 +17,8 @@ public interface StorageService {
 	Stream<Path> loadAll();
 
 	Path load(String filename);
+
+	Iterable<SingleResult> getAllResults();
 
 	Resource loadAsResource(String filename);
 

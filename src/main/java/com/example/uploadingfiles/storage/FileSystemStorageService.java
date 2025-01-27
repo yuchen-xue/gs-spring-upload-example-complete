@@ -16,7 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.google.common.collect.Table;
+
 import com.example.uploadingfiles.detection.DetectionBackend;
+import com.example.uploadingfiles.detection.DetectionResultParser;
+import com.example.uploadingfiles.db.SingleResult;
+import com.example.uploadingfiles.db.SingleResultRepository;
 
 @Service
 public class FileSystemStorageService implements StorageService {
@@ -25,6 +30,9 @@ public class FileSystemStorageService implements StorageService {
 	private final Path uploadLocation;
 	// Name of the directory that stores the images with detection bounding boxes.
 	private final Path resultLocation;
+
+    @Autowired
+    private SingleResultRepository singleResultRepository;
 
 	@Autowired
 	public FileSystemStorageService(StorageProperties properties) {
@@ -43,7 +51,7 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public void store(MultipartFile file) {
-		Path destinationFile = this.uploadLocation.resolve(
+		Path uploadFile = this.uploadLocation.resolve(
 			Paths.get(file.getOriginalFilename()))
 			.normalize().toAbsolutePath();
 		Path resultFile = this.resultLocation.resolve(
@@ -53,13 +61,13 @@ public class FileSystemStorageService implements StorageService {
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file.");
 			}
-			if (!destinationFile.getParent().equals(this.uploadLocation.toAbsolutePath())) {
+			if (!uploadFile.getParent().equals(this.uploadLocation.toAbsolutePath())) {
 				// This is a security check
 				throw new StorageException(
 						"Cannot store file outside current directory.");
 			}
 			try (InputStream inputStream = file.getInputStream()) {
-				Files.copy(inputStream, destinationFile,
+				Files.copy(inputStream, uploadFile,
 					StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
@@ -67,8 +75,36 @@ public class FileSystemStorageService implements StorageService {
 			throw new StorageException("Failed to store file.", e);
 		}
 		// Perform obejct detection on the the uploaded image
-		DetectionBackend.main(destinationFile.toString(), resultFile.toString());
+		Table<Integer, String, Float> resultTable = DetectionBackend.runDetection(uploadFile.toString(), resultFile.toString());
+
+		try {
+			// Create a parser for parsing the detection results
+			DetectionResultParser parser = new DetectionResultParser();
+        
+        	// Initialize the parser with the table
+        	parser.load(resultTable);
+
+        	// Iterate the row mapping print the data of each row
+			for (Integer row : parser.getKeySetPerRow()) {
+				SingleResult singleResult = new SingleResult (
+					parser.getLabelByRow(row),
+					parser.getScoreByRow(row),
+					parser.getYminByRow(row),
+					parser.getXminByRow(row),
+					parser.getYmaxByRow(row),
+					parser.getXmaxByRow(row)
+				);
+				singleResultRepository.save(singleResult);
+			}
+		} catch (IOException e) {
+			throw new StorageException("Failed to parse detection results.", e);
+		}
 	}
+
+    @Override
+	public Iterable<SingleResult> getAllResults() {
+        return singleResultRepository.findAll();
+    }
 
 	@Override
 	public Stream<Path> loadAll() {
