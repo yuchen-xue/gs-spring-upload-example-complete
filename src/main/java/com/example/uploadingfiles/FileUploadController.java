@@ -68,8 +68,9 @@ public class FileUploadController {
 		return "redirect:/";
 	}
 
-    @GetMapping(value = "/db/all")
-    public @ResponseBody Iterable<SingleResult> getAllResults() {
+    @GetMapping(value = "/result_db")
+	@ResponseBody
+    public Iterable<SingleResult> getAllResults() {
         return storageService.getAllResults();
     }
 
