@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,10 @@ import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.collect.Table;
+
+import org.tensorflow.Graph;
+import org.tensorflow.SavedModelBundle;
+import org.tensorflow.op.Ops;
 
 import com.example.uploadingfiles.detection.DetectionBackend;
 import com.example.uploadingfiles.detection.DetectionResultParser;
@@ -33,6 +38,9 @@ public class FileSystemStorageService implements StorageService {
 
     @Autowired
     private SingleResultRepository singleResultRepository;
+
+    @Autowired
+    private ApplicationContext context;
 
 	@Autowired
 	public FileSystemStorageService(StorageProperties properties) {
@@ -75,7 +83,12 @@ public class FileSystemStorageService implements StorageService {
 			throw new StorageException("Failed to store file.", e);
 		}
 		// Perform obejct detection on the the uploaded image
-		Table<Integer, String, Float> resultTable = DetectionBackend.runDetection(uploadFile.toString(), resultFile.toString());
+		Table<Integer, String, Float> resultTable = DetectionBackend.runDetectionTask(
+			context.getBean("model", SavedModelBundle.class), 
+			context.getBean("graph", Graph.class), 
+			context.getBean("tf", Ops.class), 
+			uploadFile.toString(), 
+			resultFile.toString());
 
 		try {
 			// Create a parser for parsing the detection results
